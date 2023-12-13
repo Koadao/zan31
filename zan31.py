@@ -55,7 +55,7 @@ def ckdtree_nearest(gdf1, gdf2):
 
     return gdf 
     
-    def intersect_using_spatial_index(source_gdf, intersecting_gdf):
+def intersect_using_spatial_index(source_gdf, intersecting_gdf):
         """
         Conduct spatial intersection using spatial index for candidates GeoDataFrame to make queries faster.
         Note, with this function, you can have multiple Polygons in the 'intersecting_gdf' and it will return all the points 
@@ -77,6 +77,15 @@ def ckdtree_nearest(gdf1, gdf2):
     # Conduct the actual intersect
     result = possible_matches.loc[possible_matches.intersects(intersecting_gdf.unary_union)]
     return result
+
+def sjoin_1n_maj (gpd_parcel, zonage , champ_zonage) :
+    parcelle_simple = gpd_parcel[['IDU','geometry']]
+    parcelle_zone = gpd.overlay(zonage, parcelle_simple)
+    parcelle_zone['area_z'] = parcelle_zone.area
+    parcelle_zone.sort_values('area_z', ascending=False, inplace=True)
+    parcelle_zone= parcelle_zone.groupby('IDU').head(1)
+    gpd_parcel = gpd_parcel.merge(parcelle_zone[['IDU',champ_zonage]], on='IDU')
+    return gpd_parcel
 
 
 def urban_intensity(couche_parcelle, couche_bati, IDU, aire_min):
