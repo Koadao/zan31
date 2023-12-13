@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 sys.path.append('C:/Users/Xenerios/Desktop/zan_31/V2/z31_f')
 import zan31
 
-#load data
+#load plain data
 data_path = 'C:/Users/Xenerios/Desktop/zan_31/V2/data_sampled'
 
 filename = []
@@ -32,73 +32,91 @@ for data in glob.glob(os.path.join(
     data_path, '*.geojson')):
 
     filename.append(data)
+filename
 
+parcels = gpd.read_file(filename[2]).to_crs(2154)
 
+#only retrieve urban parcels (FILTER)
 
-parcels = gpd.read_file(filename[1]).to_crs(2154)
+#apply constraints (FILTER)
 
-#filtre parcels par Tâche urbaine 'U'
-
-#filtre par les contraintes
-
-
-#calc area
+#area and shape
 parcels['area'] = parcels.area.astype(int)
-#calc i_geom
+
+#shapes
 parcels = zan31.geom_index(parcels) 
-#générer l'IDU
+parcels
 
-#filtre taille minimale et i_geom
+#compute IDU
+parcels['IDU'] = parcels['CODE_DEP']+parcels['CODE_COM']+parcels['SECTION']+parcels['NUMERO']#create unique ID
+parcels
 
+#retrieve parcels according to size and geometry index (FILTER)
 
-#parcelles filtrées
+#urban intensity
 
+#distance - accessibility
+parcels_cent = parcels.centroid#returns geoseries
 
-#ouverture bd topo batiment
-#calcul de l'intensité urbaine => parcelle bati divisible/ bati pas divisible /sans bati/
+parcels_cent = pd.concat([parcels.reset_index(drop = True), 
+                          parcels_cent], 
+                          axis = 1
+                          )
 
+parcels_cent = parcels_cent.set_geometry(parcels_cent.columns[-1])
+parcels_cent = parcels_cent.rename_geometry('geom_cent')
+#parcels_cent = parcels_cent.drop(parcels_cent.columns[-3])
+parcels_cent.geometry.name#must be centroids column
+parcels_cent.geom_type.unique()#must be centroids
 
-#Accésibilité
+parcels_cent
 
-parcels_cent = parcels.centroid
-parcels_cent.geom_type.unique()
-
-bus = gpd.read_file(filename[0]).to_crs(2154)
+bus = gpd.read_file(filename[1]).to_crs(2154)
 bus.geom_type.unique()#must be centroids
+bus.name = 'BUS'#always
 
-train = gpd.read_file(filename[2]).to_crs(2154)
+train = gpd.read_file(filename[3]).to_crs(2154)
 train.geom_type.unique()#must be centroids
+train.name = 'TRAIN'#always
 
-roads = gpd.read_file(filename[3]).to_crs(2154)
-
-roads = roads[roads['NATURE']=='Bretelle']#none for haut
+roads = gpd.read_file(filename[0]).to_crs(2154)
+roads
+#roads = roads[roads['NATURE']=='Bretelle']#none for haut
 roads = roads.buffer(150).unary_union
+roads
 roads = gpd.GeoDataFrame(geometry=gpd.GeoSeries(roads),
-                         crs=roads.crs)
+                         crs=2154)
+roads
 roads = roads.explode()
 roads = roads.reset_index()
-roads = roads.centroid
+roads = roads[roads.disjoint(train.unary_union)].centroid
+roads
+roads.name = 'ROADS'#always
 
-#roads = roads[roads.disjoint(train.unary_union)].centroid
+parcels = zan31.ckdtree_nearest(parcels_cent, bus)
+parcels
 
-#calc distance (nearest point )
+parcels = zan31.ckdtree_nearest(parcels_cent, roads)
+parcels
 
-
-
-#Slop calc
-
+parcels = zan31.ckdtree_nearest(parcels_cent, train)
+parcels.columns
 dem = gdal.Open(os.path.join(
     data_path, 'dem_haut.tif'))
 
+parcels
 
-#clean file (cut + proj)
+#slope data
+##clean file (cut + proj)
+###set up warp options
 warp_options = gdal.WarpOptions(
     format='GTiff',
     dstSRS = 'EPSG:2154',
     cutlineDSName='C:/Users/Xenerios/Desktop/zan_31/V2/data_/roi_haut.shp',
     dstNodata=0, 
 )
-#apply warp
+
+###apply warp
 output_dem = gdal.Warp(
                     'C:/Users/Xenerios/Desktop/zan_31/V2/data_sampled/dem_haut_f.tif', 
                     dem, 
@@ -109,42 +127,37 @@ output_dem = gdal.Warp(
 dem = None
 output_dem = None
 
-slop_path = 'output_slop.tif'
-
 ##compute slop
 dem_f = gdal.Open(
-    'E:/SIGMA/M1/sig/MNT_5M.tif'
+    'C:/Users/Xenerios/Desktop/zan_31/V2/data_sampled/dem_haut_f.tif'
     )
 
-gdal.DEMProcessing(slop_path, dem_f, "slope", computeEdges=True)
+slope_path = 'C:/Users/Xenerios/Desktop/zan_31/V2/data_sampled/slope_haut.tif'
 
-#compute slope mean for each parcel rasterstats
+gdal.DEMProcessing(slope_path, 
+                   dem_f, 
+                   "slope", 
+                   computeEdges=True)
 
+##compute slope mean for each parcel
+slope = gdal.Open(
+    'C:/Users/Xenerios/Desktop/zan_31/V2/data_sampled/slope_haut.tif'
+    )
+
+###compute slope_mean using rasterstats
+start = time.time()
 slope_st = zonal_stats(vectors = parcels['geometry'],
-                       raster = slop_path,
+                       raster = slope_path,
                        stats = 'mean'
                        )
+end = time.time()
+print(end-start)
 
 parcels['slope_mean'] = gpd.GeoDataFrame(slope_st)['mean'].astype(int)
 
+#building's properties (bdnb)
 
-#Data qualitative BDNB
-
-#jointure de la bndb champs 
-#aggrégation ...
-
-
-#donnée zonages
-
-#ouverture 
-
-
- 
-
-
-
-
-
+#environmental second class risks
 
 
 
