@@ -39,6 +39,9 @@ parcels = gpd.read_file(filename[2]).to_crs(2154)
 parcels
 
 #only retrieve urban parcels (FILTER)
+TU_topo = gpd.readfile()
+parcels = parcels.sjoin(TU_topo, how="left", predicate='intersects')
+parcels = parcels[parcels['type_zone']=='U']
 
 #apply constraints (FILTER)
 
