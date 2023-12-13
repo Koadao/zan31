@@ -22,9 +22,10 @@ from scipy.spatial import cKDTree
 import matplotlib.pyplot as plt
 
 sys.path.append('C:/Users/Xenerios/Desktop/zan_31/V2/z31_f')
-import zan31
+import z31_functions
 
-#load plain data
+#load plain parcels data
+##data_path
 data_path = 'C:/Users/Xenerios/Desktop/zan_31/V2/data_sampled'
 
 filename = []
@@ -35,6 +36,7 @@ for data in glob.glob(os.path.join(
 filename
 
 parcels = gpd.read_file(filename[2]).to_crs(2154)
+parcels
 
 #only retrieve urban parcels (FILTER)
 
@@ -44,7 +46,7 @@ parcels = gpd.read_file(filename[2]).to_crs(2154)
 parcels['area'] = parcels.area.astype(int)
 
 #shapes
-parcels = zan31.geom_index(parcels) 
+parcels = z31_functions.geom_index(parcels) 
 parcels
 
 #compute IDU
@@ -56,12 +58,15 @@ parcels
 #urban intensity
 
 #distance - accessibility
+##load and preprocess data
 parcels_cent = parcels.centroid#returns geoseries
 
 parcels_cent = pd.concat([parcels.reset_index(drop = True), 
                           parcels_cent], 
                           axis = 1
                           )
+
+parcels_cent
 
 parcels_cent = parcels_cent.set_geometry(parcels_cent.columns[-1])
 parcels_cent = parcels_cent.rename_geometry('geom_cent')
@@ -80,33 +85,36 @@ train.geom_type.unique()#must be centroids
 train.name = 'TRAIN'#always
 
 roads = gpd.read_file(filename[0]).to_crs(2154)
-roads
 #roads = roads[roads['NATURE']=='Bretelle']#none for haut
 roads = roads.buffer(150).unary_union
-roads
 roads = gpd.GeoDataFrame(geometry=gpd.GeoSeries(roads),
                          crs=2154)
-roads
 roads = roads.explode()
 roads = roads.reset_index()
 roads = roads[roads.disjoint(train.unary_union)].centroid
-roads
 roads.name = 'ROADS'#always
 
-parcels = zan31.ckdtree_nearest(parcels_cent, bus)
-parcels
+##apply nearest neighbor algorithm
+parcels_cent = z31_functions.ckdtree_nearest(parcels_cent, bus)
+parcels_cent
 
-parcels = zan31.ckdtree_nearest(parcels_cent, roads)
-parcels
+parcels_cent = z31_functions.ckdtree_nearest(parcels_cent, roads)
+parcels_cent
 
-parcels = zan31.ckdtree_nearest(parcels_cent, train)
-parcels.columns
+parcels_cent = z31_functions.ckdtree_nearest(parcels_cent, train)
+parcels_cent
+
+##append to original geodataframe
+parcels = parcels.merge(parcels_cent[['dist_TRAIN',#change to DIST afterwards 
+                                      'dist_BUS', 
+                                      'dist_ROADS', 
+                                      'IDU']], on = 'IDU')
+
+
+#slope data
 dem = gdal.Open(os.path.join(
     data_path, 'dem_haut.tif'))
 
-parcels
-
-#slope data
 ##clean file (cut + proj)
 ###set up warp options
 warp_options = gdal.WarpOptions(
@@ -156,6 +164,7 @@ print(end-start)
 parcels['slope_mean'] = gpd.GeoDataFrame(slope_st)['mean'].astype(int)
 
 #building's properties (bdnb)
+gdf_parc_sup['classe_conso'] = gdf_parc_sup['classe_conso'].apply(lambda row : ord(row.lower())-96 if row != None and row != '' else row)
 
 #environmental second class risks
 
