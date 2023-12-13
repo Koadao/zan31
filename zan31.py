@@ -12,7 +12,7 @@ from scipy.spatial import cKDTree
 
 def geom_index(gdf):
 
-    gdf['miller_index'] = (4*pi*gdf.area)/pow(gdf.length,2)
+    gdf['miller_index'] = (4*pi*gdf.area)/pow(gdf.length,2) # exposant pow
     gdf['solidity_index'] = gdf.area/gdf.convex_hull.area
     gdf['geom_index'] = (gdf['miller_index']+gdf['solidity_index'])/2
     gdf['par_area'] = gdf.area
@@ -56,11 +56,11 @@ def ckdtree_nearest(gdf1, gdf2):
     return gdf 
     
 def intersect_using_spatial_index(source_gdf, intersecting_gdf):
-        """
-        Conduct spatial intersection using spatial index for candidates GeoDataFrame to make queries faster.
-        Note, with this function, you can have multiple Polygons in the 'intersecting_gdf' and it will return all the points 
-        intersect with ANY of those geometries.
-        """
+    """
+    Conduct spatial intersection using spatial index for candidates GeoDataFrame to make queries faster.
+    Note, with this function, you can have multiple Polygons in the 'intersecting_gdf' and it will return all the points 
+    intersect with ANY of those geometries.
+    """
     source_sindex = source_gdf.sindex
     possible_matches_index = []
     
@@ -99,7 +99,7 @@ def urban_intensity(couche_parcelle, couche_bati, IDU, aire_min):
 
     #calcul champ de surfance en entier
     df_overlay_clear['area_bati']= df_overlay_clear.area.astype(int)
-    parcelle['area']= parcelle.area.astype(int)
+    couche_parcelle['area']= couche_parcelle.area.astype(int)
 
     #regroupement du result par parcelle geom plus area(sum)
     dfjoin = df_overlay_clear.dissolve(IDU ,aggfunc={"area_bati": "sum"})
@@ -107,7 +107,7 @@ def urban_intensity(couche_parcelle, couche_bati, IDU, aire_min):
 
     #regroup les polygones batiments par parcelles 
     #jointure du résultat de la surface bati par parcelle aux parcelles
-    parcelle_ratio = parcelle.merge(dfjoin[['area_bati', IDU]],how='left', on = IDU)
+    parcelle_ratio = couche_parcelle.merge(dfjoin[['area_bati', IDU]],how='left', on = IDU)
 
     #Calcul du pourcentage final
     parcelle_ratio['urb_inten_pourcent'] = parcelle_ratio['area_bati']/parcelle_ratio['area']*100
@@ -126,33 +126,10 @@ def urban_intensity(couche_parcelle, couche_bati, IDU, aire_min):
     parcelle_divisible = parcelle_ratio.overlay(dfjoin_clear, how='difference')
     parcelle_divisible['area_div'] = parcelle_divisible.area.astype(int)
 
-    parcelle_ratio = parcelle.merge(parcelle_divisible[[IDU, 'area_div']],how='left', on = IDU)
+    parcelle_ratio = couche_parcelle.merge(parcelle_divisible[[IDU, 'area_div']],how='left', on = IDU)
     parcelle_ratio = parcelle_ratio.reset_index()
     parcelle_ratio['divisible'] = parcelle_ratio['area_div'].apply(lambda x: 1 if x > aire_min else 0)
     
     return parcelle_ratio, parcelle_divisible
 
-def maximiser (df,list_col):
-    '''
-    Transformation des critères minimisé en critère maximiser 
-    EXP : dist aux gares plus petites valeurs = plus importantes valeurs
-    ------
-    df =  geodataframe contenant les critères 
-    list_col = liste des colonnes à maximiser
-    '''
-    for i in range (len(list_col)):
-        df['max_{}'.format(list_col[i])] = df[list_col[i]].max()-df[list_col[i]]
-    return df
 
-def norma_sum (df,sum_critere,list_col):
-    '''
-    Transformation des critères en critère normalisé
-    méthode x = col_x/Sum de la ligne
-    ------
-    df =  geodataframe contenant les critères
-    sum_critere = colonne de sum par ligne des colonnes de critère
-    list_col = liste des colonnes à normaliser
-    '''
-    for i in range (len(list_col)):
-        df['norm_{}'.format(list_col[i])]=df[list_col[i]]/df[sum_critere]
-    return df
