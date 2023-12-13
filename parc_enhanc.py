@@ -164,9 +164,38 @@ print(end-start)
 parcels['slope_mean'] = gpd.GeoDataFrame(slope_st)['mean'].astype(int)
 
 #building's properties (bdnb)
-gdf_parc_sup['classe_conso'] = gdf_parc_sup['classe_conso'].apply(lambda row : ord(row.lower())-96 if row != None and row != '' else row)
 
-#environmental second class risks
+ROI = gpd.read_file('epci_auterivain.geojson')
+
+bdnb = gpd.read_file('DPE_BAUTV.gpkg' ,layer='batiment_groupe_compile')
+#bdnb = gpd.read_file('DPE_BAUTV.gpkg' ,layer='batiment_autres_styles_disponible_sur_clic_droit')
+#cut Bdnb to ROI
+bdnb_cut = zan31.intersect_using_spatial_index(bdnb, ROI)
+#sjoin
+df_overlay = bdnb_cut.overlay(parcels, how='intersection')
+#regroupement du result par parcelle geom plus area(sum)
+dfjoin = df_overlay.dissolve('IDU',aggfunc={'ffo_bat_annee_construction': 'min','dpe_class_conso_ener_mean' :'first'})#other aggfunc = first
+dfjoin = dfjoin.reset_index()
+#merge result selection on IDU
+parcels = parcels.merge(dfjoin[['IDU','ffo_bat_annee_construction','dpe_class_conso_ener_mean']], on='IDU')
+parcels = parcels.reset_index()
+
+#transform class conso in Int
+parcels['class_conso_int_mean'] = parcels['dpe_class_conso_ener_mean'].apply(lambda row : ord(row.lower())-96 if row != None and row != '' else row)
+
+
+#environmental second class risks and land use
+oso = gpd.read_file('OSO_BAUTV.shp')
+cizi = gpd.read_file('CIZI_BAUTV_03_04.shp')
+#filtre cizi si '01','02'
+
+cizi = cizi[cizi['rf_type']!= ('01'and '02')]
+
+parcels = zan31.sjoin_1n_maj(parcels, oso, 'Classe')
+parcels.rename(columns = {'Classe': 'Classe_oso'}, inplace=True)
+
+parcels = zan31.sjoin_1n_maj(parcels, cizi, 'rf_type')
+parcels['cizi_zone'] = parcels['rf_type'].astype(int)
 
 
 
