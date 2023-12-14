@@ -35,30 +35,60 @@ for data in glob.glob(os.path.join(
     filename.append(data)
 filename
 
-parcels = gpd.read_file(filename[2]).to_crs(2154)
-parcels
+os.chdir('C:/Users/dsii/Documents/zan_31_atelier/data_test')
 
+parcels = gpd.read_file('parcelle.geojson')
 #only retrieve urban parcels (FILTER)
-TU_topo = gpd.read_file()
+#open TU
+
+TU_topo = gpd.read_file('TU_topo.gpkg')
 parcels = parcels.sjoin(TU_topo, how="left", predicate='intersects')
+
 parcels = parcels[parcels['type_zone']=='U']
 
+parcels = parcels.drop(columns=['index_right','baticount'])
+parcels = parcels.reset_index()
+
 #apply constraints (FILTER)
+contraint = gpd.read_file('constraints.shp')
+#filtre contrainte
+ROI = gpd.read_file('epci_auterivain.geojson')
+
+roi = ROI.envelope
+contraint = contraint.clip(roi)
+
+start = time.time()
+parcels = parcels[parcels.disjoint(contraint.unary_union)]
+end = time.time()
+print(end-start)
+
+###################
+aire_minimum = 700# m2
+###################
 
 #area and shape
 parcels['area'] = parcels.area.astype(int)
+parcels = parcels[parcels['area']>aire_minimum]
 
 #shapes
 parcels = z31_functions.geom_index(parcels) 
-parcels
 
 #compute IDU
-parcels['IDU'] = parcels['CODE_DEP']+parcels['CODE_COM']+parcels['SECTION']+parcels['NUMERO']#create unique ID
-parcels
-
+#parcels['IDU'] = parcels['CODE_DEP']+parcels['CODE_COM']+parcels['SECTION']+parcels['NUMERO']#create unique ID
+new_roi =  parcels.dissolve()
 #retrieve parcels according to size and geometry index (FILTER)
 
+start = time.time()
+
+bati_topo = gpd.read_file('bd_topo.gpkg' ,layer='batiment')
+bati = z31_functions.intersect_using_spatial_index(bati_topo, new_roi)
+
+end = time.time()
+print(end-start)
 #urban intensity
+parcels.drop(columns=['index_right','baticount'])
+
+parcels , parcels_div = z31_functions.urban_intensity(parcels , bati, 'IDU',500)
 
 #distance - accessibility
 ##load and preprocess data
@@ -69,7 +99,6 @@ parcels_cent = pd.concat([parcels.reset_index(drop = True),
                           axis = 1
                           )
 
-parcels_cent
 
 parcels_cent = parcels_cent.set_geometry(parcels_cent.columns[-1])
 parcels_cent = parcels_cent.rename_geometry('geom_cent')
@@ -77,25 +106,37 @@ parcels_cent = parcels_cent.rename_geometry('geom_cent')
 parcels_cent.geometry.name#must be centroids column
 parcels_cent.geom_type.unique()#must be centroids
 
-parcels_cent
 
-bus = gpd.read_file(filename[1]).to_crs(2154)
+bus = gpd.read_file('arrets-du-reseau-lio.geojson').to_crs(2154)
 bus.geom_type.unique()#must be centroids
 bus.name = 'BUS'#always
 
-train = gpd.read_file(filename[3]).to_crs(2154)
+
+gdf_equip_topo = gpd.read_file('bd_topo.gpkg' ,layer='equipement_de_transport')
+#aires de repos
+aire_de_repos = gdf_equip_topo[gdf_equip_topo['nature']=='Aire de repos ou de service']
+
+
+train = gdf_equip_topo[gdf_equip_topo['nature']==('Arrêt voyageurs'or
+                                         'Gare voyageurs et fret'or
+                                         'Gare voyageurs uniquement')
+                                         ]
+
+train = train.centroid
 train.geom_type.unique()#must be centroids
 train.name = 'TRAIN'#always
 
-roads = gpd.read_file(filename[0]).to_crs(2154)
-#roads = roads[roads['NATURE']=='Bretelle']#none for haut
+roads = gpd.read_file('bd_topo.gpkg' ,layer='troncon_de_route').to_crs(2154)
+###########selection part
+roads = roads[roads['nature']=='Bretelle']#none for haut
 roads = roads.buffer(150).unary_union
 roads = gpd.GeoDataFrame(geometry=gpd.GeoSeries(roads),
                          crs=2154)
 roads = roads.explode()
 roads = roads.reset_index()
-roads = roads[roads.disjoint(train.unary_union)].centroid
+roads = roads[roads.disjoint(aire_de_repos.unary_union)].centroid
 roads.name = 'ROADS'#always
+
 
 ##apply nearest neighbor algorithm
 parcels_cent = z31_functions.ckdtree_nearest(parcels_cent, bus)
@@ -112,24 +153,24 @@ parcels = parcels.merge(parcels_cent[['dist_TRAIN',#change to DIST afterwards
                                       'dist_BUS', 
                                       'dist_ROADS', 
                                       'IDU']], on = 'IDU')
-
+#####################################################################
+###################################################### fin bug ######
 
 #slope data
-dem = gdal.Open(os.path.join(
-    data_path, 'dem_haut.tif'))
+dem = gdal.Open( 'MNT_BAUTV.tif')
 
 ##clean file (cut + proj)
 ###set up warp options
 warp_options = gdal.WarpOptions(
     format='GTiff',
     dstSRS = 'EPSG:2154',
-    cutlineDSName='C:/Users/Xenerios/Desktop/zan_31/V2/data_/roi_haut.shp',
+    cutlineDSName='epci_auterivain.geojson',
     dstNodata=0, 
 )
 
 ###apply warp
 output_dem = gdal.Warp(
-                    'C:/Users/Xenerios/Desktop/zan_31/V2/data_sampled/dem_haut_f.tif', 
+                    'DEM.tif', 
                     dem, 
                     options = warp_options
                             )
@@ -139,22 +180,18 @@ dem = None
 output_dem = None
 
 ##compute slop
-dem_f = gdal.Open(
-    'C:/Users/Xenerios/Desktop/zan_31/V2/data_sampled/dem_haut_f.tif'
-    )
+dem_f = gdal.Open('DEM.tif')
 
-slope_path = 'C:/Users/Xenerios/Desktop/zan_31/V2/data_sampled/slope_haut.tif'
+slope_path = 'C:/Users/dsii/Documents/zan_31_atelier/data_test/slope.tif'
 
 gdal.DEMProcessing(slope_path, 
                    dem_f, 
                    "slope", 
                    computeEdges=True)
-
+'''
 ##compute slope mean for each parcel
-slope = gdal.Open(
-    'C:/Users/Xenerios/Desktop/zan_31/V2/data_sampled/slope_haut.tif'
-    )
-
+slope = gdal.Open(slope_path)
+'''
 ###compute slope_mean using rasterstats
 start = time.time()
 slope_st = zonal_stats(vectors = parcels['geometry'],
@@ -168,10 +205,8 @@ parcels['slope_mean'] = gpd.GeoDataFrame(slope_st)['mean'].astype(int)
 
 #building's properties (bdnb)
 
-ROI = gpd.read_file('epci_auterivain.geojson')
-
-bdnb = gpd.read_file('DPE_BAUTV.gpkg' ,layer='batiment_groupe_compile')
-#bdnb = gpd.read_file('DPE_BAUTV.gpkg' ,layer='batiment_autres_styles_disponible_sur_clic_droit')
+#bdnb = gpd.read_file('BDNB_BAUTV.gpkg' ,layer='batiment_groupe_compile')
+bdnb = gpd.read_file('BDNB_BAUTV.gpkg' ,layer='batiment_autres_styles_disponible_sur_clic_droit')
 #cut Bdnb to ROI
 bdnb_cut = z31_functions.intersect_using_spatial_index(bdnb, ROI)
 #sjoin
