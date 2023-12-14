@@ -173,7 +173,7 @@ ROI = gpd.read_file('epci_auterivain.geojson')
 bdnb = gpd.read_file('DPE_BAUTV.gpkg' ,layer='batiment_groupe_compile')
 #bdnb = gpd.read_file('DPE_BAUTV.gpkg' ,layer='batiment_autres_styles_disponible_sur_clic_droit')
 #cut Bdnb to ROI
-bdnb_cut = zan31.intersect_using_spatial_index(bdnb, ROI)
+bdnb_cut = z31_functions.intersect_using_spatial_index(bdnb, ROI)
 #sjoin
 df_overlay = bdnb_cut.overlay(parcels, how='intersection')
 #regroupement du result par parcelle geom plus area(sum)
@@ -194,11 +194,15 @@ cizi = gpd.read_file('CIZI_BAUTV_03_04.shp')
 
 cizi = cizi[cizi['rf_type']!= ('01'and '02')]
 
-parcels = zan31.sjoin_1n_maj(parcels, oso, 'Classe')
+parcels = z31_functions.sjoin_1n_maj(parcels, oso, 'Classe')
 parcels.rename(columns = {'Classe': 'Classe_oso'}, inplace=True)
 
-parcels = zan31.sjoin_1n_maj(parcels, cizi, 'rf_type')
+parcels = z31_functions.sjoin_1n_maj(parcels, cizi, 'rf_type')
 parcels['cizi_zone'] = parcels['rf_type'].astype(int)
+
+
+
+
 
 
 
