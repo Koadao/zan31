@@ -66,6 +66,10 @@ ppri['typereg'].unique()
 
 ppri_filt = ppri[ppri['typereg']=='03']
 ppri_filt
+ppri_cleaned = ppri_filt.buffer(0)
+ppri_gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(ppri_cleaned),
+                         crs=crs)#geodataframe
+ppri_gdf
 
 #cizi
 cizi = gpd.read_file(os.path.join(
@@ -82,7 +86,6 @@ end = time.time()
 print(end-start)
 
 #obj : single polygon from all geometries
-roi = 'C:/Users/Xenerios/Desktop/zan_31/V2/data_/roi_haut.shp'
 
 ##buffer if linear
 roads_poly = roads_filt.buffer(2).unary_union
@@ -99,17 +102,75 @@ train_gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(train_poly),
                          crs=crs)#geodataframe
 train_gdf
 
-##explode if multipolygon -- only if geodataframe has been built
+#explode -- set to polygon
+area_of_interest.geom_type.unique()#Polygon
+cemeteries.geom_type.unique()#Polygon
+fields.geom_type.unique()#Polygon, Multipolygon
+roads_gdf.geom_type.unique()#Multipolygon
+train_gdf.geom_type.unique()#Multipolygon
+ppri_filt.geom_type.unique()#Polygon, Multipolygon
+cizi_filt.geom_type.unique()#Multipolygon
+
+
+fields_gdf = fields.explode()
+fields_gdf.geom_type.unique()
+
 roads_gdf = roads_gdf.explode()
-roads_gdf
+roads_gdf.geom_type.unique()
 
 train_gdf = train_gdf.explode()
-train_gdf
+train_gdf.geom_type.unique()
+
+ppri_gdf = ppri_filt.explode()
+ppri_gdf.geom_type.unique()
+
+cizi_gdf = cizi_filt.explode()
+cizi_gdf.geom_type.unique()
 
 #extract geom column (only valuable column here) and concat
+constraints_list = [
+    area_of_interest, 
+    cemeteries, 
+    fields_gdf,
+    roads_gdf,
+    train_gdf,
+    ppri_gdf,
+    cizi_gdf
+]
 
-##unary_union 
-train_gdf.GeoSeries
-poly_list = [roads_gdf['geometry'], train_gdf['geometry']]
+geom_list = []
+for gdf in constraints_list:
+    geom = gdf['geometry'].make_valid()
+    print(gdf)
 
-single_polygon = unary_union(poly_list)
+    geom_union = unary_union(geom)
+
+    gdf_union = gpd.GeoDataFrame(geometry=gpd.GeoSeries(geom_union),
+                         crs=crs)#geodataframe
+    
+    geom_f = gdf_union['geometry']
+
+    geom_list.append(geom_f)
+
+geom_list
+
+single_poly = gpd.GeoDataFrame(pd.concat(
+    geom_list, ignore_index=True), 
+crs=crs)
+single_poly
+single_poly.geom_type.unique()
+
+##create single geometry
+#single_poly = single_poly['geometry'].make_valid()
+single_poly = single_poly.dissolve()
+single_poly
+#type(single_poly)
+#single_poly = unary_union(single_poly)
+#single_poly#multipolygon -- shapely object
+
+#single_poly_gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(single_poly),
+                         #crs=crs)#geodataframe
+
+single_poly.to_file(
+    'C:/Users/Xenerios/Desktop/zan_31/V2/data_/constraints.shp'
+)
