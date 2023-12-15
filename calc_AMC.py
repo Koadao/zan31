@@ -17,9 +17,11 @@ def maximiser (df,list_col):
     df =  geodataframe contenant les critères 
     list_col = liste des colonnes à maximiser
     '''
+    list_max = []
     for i in range (len(list_col)):
-        df['max_{}'.format(list_col[i])] = df[list_col[i]].max()-df[list_col[i]]
-    return df
+        df[f'max_{list_col[i]}'] = df[list_col[i]].max()-df[list_col[i]]
+        list_max.append(f'max_{list_col[i]}')
+    return df , list_max
 
 def norma_sum (df,sum_critere,list_col):
     '''
@@ -30,45 +32,61 @@ def norma_sum (df,sum_critere,list_col):
     sum_critere = colonne de sum par ligne des colonnes de critère
     list_col = liste des colonnes à normaliser
     '''
+    list_norma_sum = []
     for i in range (len(list_col)):
-        df['norm_{}'.format(list_col[i])]=df[list_col[i]]/df[sum_critere]
-    return df
+        df[f'norm_{list_col[i]}'.format(list_col[i])]=df[list_col[i]]/df[sum_critere]
+        list_norma_sum.append(f'norm_{list_col[i]}')
+    return df, list_norma_sum
 
-parcels_path = 'C:/Users/Xenerios/Desktop/zan_31/V2/parcelle_indice_multi_critère.gpkg'
-indice_parcelle = gpd.read_file('parcelle_indice_multi_critère.gpkg', layer='parcelle_indice_multi_critère')
-indice_parcelle.columns
 
-list_col = ['annee_cons','dist_auto_','dist_gare','dist_bus']#data to max 
-indice_parcelle['annee_cons'] = indice_parcelle['annee_cons'].fillna(0)
-indice_parcelle = maximiser(indice_parcelle,list_col)
+os.chdir('C:/Users/dsii/Documents/zan_31_atelier/data_test')
+
+indice_parcelle =  gpd.read_file('parcels_rich.gpkg')
+indice_parcelle = indice_parcelle[['IDU','area','cizi_zone','geom_index', 'ffo_bat_annee_construction','dist_ROADS','dist_TRAIN','dist_BUS','slope_mean','urb_inten_pourcent','class_conso_int_mean','Classe_oso']]
+
+list_col= indice_parcelle.columns
+
+#check na
+list_na = []
+for i in range(len(list_col)):
+     na = indice_parcelle[list_col[i]].isna().sum()
+     list_na.append([list_col[i],na])
+     
+#fill na
+indice_parcelle['ffo_bat_annee_construction'] = indice_parcelle['ffo_bat_annee_construction'].fillna(0)
+indice_parcelle['Classe_oso'] = indice_parcelle['Classe_oso'].fillna(5)
+
+#initiate list columns 
+list_unchanged = ['area','cizi_zone','geom_index','class_conso_int_mean']
+list_col_max = ['ffo_bat_annee_construction','dist_ROADS','dist_TRAIN','dist_BUS','slope_mean','urb_inten_pourcent','Classe_oso']
+
+
+indice_parcelle , list_col_maximiser = maximiser(indice_parcelle,list_col_max)
 
 #gestion des cas annees de construction = 0 transformés en 2020 avec la fonction maximiser
-indice_parcelle['max_annee_cons'] = indice_parcelle['max_annee_cons'].apply(lambda x: 0 if x == 2020 else x)#become 0 again if false 2020
-
+indice_parcelle['max_ffo_bat_annee_construction'] = indice_parcelle['max_ffo_bat_annee_construction'].apply(lambda x: 0 if x == 2020 else x)#become 0 again if false 2020
 
 #Sum par ligne des colonnes de critères
-indice_parcelle['sum_critere'] = indice_parcelle['IndiceGeom']+indice_parcelle['max_dist_gare']+indice_parcelle['max_dist_bus']+indice_parcelle['max_annee_cons']+indice_parcelle['max_dist_auto_']+indice_parcelle['par_area']
+list_col_a_sum = list_unchanged + list_col_maximiser
+indice_parcelle['sum_critere'] = 0
+for i in range(len(list_col_a_sum)):
+    indice_parcelle['sum_critere'] = indice_parcelle['sum_critere'] + indice_parcelle[list_col_a_sum[i]]
 
-list_col = ['IndiceGeom','max_dist_gare','max_dist_bus','max_annee_cons','max_dist_auto_','par_area']
 #application fonction norma_sum
-indice_parcelle = norma_sum(indice_parcelle, 'sum_critere',list_col)
+indice_parcelle, list_col_normalise = norma_sum(indice_parcelle, 'sum_critere',list_col_a_sum)
 
 
-#def des poids de chaque critère normalisé w...
-w_area = 0.30
-w_annee = 0.15
-w_dist_gare = 0.15
-w_dist_bus = 0.15
-w_dist_auto = 0.05
-w_geom = 0.20
-
-
+#create dict of weights
+list_poids = [0]*11 #poids vides
+dict_w = {list_col_normalise[i]: list_poids[i] for i in range(len(list_col_normalise))}  
 
 #Calcul de la Somme pondérée
-indice_parcelle['i_mutli_crit']= indice_parcelle['norm_IndiceGeom']*w_geom +indice_parcelle['norm_max_dist_gare']*w_dist_gare +indice_parcelle['norm_max_dist_bus']*w_dist_bus +indice_parcelle['norm_max_annee_cons']*w_annee +indice_parcelle['norm_max_dist_auto_']*w_dist_auto +indice_parcelle['norm_par_area']*w_area
+indice_parcelle['i_mutli_crit'] = 0
+for i in range(len(list_col_normalise)):
+    indice_parcelle['i_mutli_crit'] = indice_parcelle['i_mutli_crit'] + indice_parcelle[list_col_normalise[i]]* dict_w[list_col_normalise[i]]
+    
 
-indice_parcelle.to_file('parcelle_indice_multi_critère.gpkg' ,layer='parcelle_AMC')
+#write in csv
+indice_parcelle[['IDU','i_mutli_crit']].to_csv('i_mutli_crit.csv')
 
-#function (arg = data, list of unchanged fields, list of fields to max)
-#def compute_mce(data, max_fields, unchanged_fields):
 
