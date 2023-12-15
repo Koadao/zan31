@@ -84,7 +84,7 @@ def sjoin_1n_maj (gpd_parcel, zonage , champ_zonage) :
     parcelle_zone['area_z'] = parcelle_zone.area
     parcelle_zone.sort_values('area_z', ascending=False, inplace=True)
     parcelle_zone= parcelle_zone.groupby('IDU').head(1)
-    gpd_parcel = gpd_parcel.merge(parcelle_zone[['IDU',champ_zonage]], on='IDU')
+    gpd_parcel = gpd_parcel.merge(parcelle_zone[['IDU',champ_zonage]],how='left', on='IDU')
     return gpd_parcel
 
 

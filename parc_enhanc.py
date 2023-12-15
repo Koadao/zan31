@@ -21,8 +21,10 @@ from scipy.spatial import cKDTree
 
 import matplotlib.pyplot as plt
 
-sys.path.append('C:/Users/Xenerios/Desktop/zan_31/V2/z31_f')
 import z31_functions
+'''
+sys.path.append('C:/Users/Xenerios/Desktop/zan_31/V2/z31_f')
+
 
 #load plain parcels data
 ##data_path
@@ -34,7 +36,7 @@ for data in glob.glob(os.path.join(
 
     filename.append(data)
 filename
-
+'''
 os.chdir('C:/Users/dsii/Documents/zan_31_atelier/data_test')
 
 parcels = gpd.read_file('parcelle.geojson')
@@ -63,7 +65,7 @@ end = time.time()
 print(end-start)
 
 ###################
-aire_minimum = 700# m2
+aire_minimum = 500# m2
 ###################
 
 #area and shape
@@ -86,7 +88,7 @@ bati = z31_functions.intersect_using_spatial_index(bati_topo, new_roi)
 end = time.time()
 print(end-start)
 #urban intensity
-parcels.drop(columns=['index_right','baticount'])
+#parcels.drop(columns=['index_right','baticount'])
 
 parcels , parcels_div = z31_functions.urban_intensity(parcels , bati, 'IDU',500)
 
@@ -153,6 +155,7 @@ parcels = parcels.merge(parcels_cent[['dist_TRAIN',#change to DIST afterwards
                                       'dist_BUS', 
                                       'dist_ROADS', 
                                       'IDU']], on = 'IDU')
+
 #####################################################################
 ###################################################### fin bug ######
 
@@ -175,23 +178,14 @@ output_dem = gdal.Warp(
                     options = warp_options
                             )
 
-###declare as None to save memory space
-dem = None
-output_dem = None
-
 ##compute slop
-dem_f = gdal.Open('DEM.tif')
-
-slope_path = 'C:/Users/dsii/Documents/zan_31_atelier/data_test/slope.tif'
-
-gdal.DEMProcessing(slope_path, 
-                   dem_f, 
+slope_path = 'slope.tif' #output slop_tif
+output_slope = gdal.DEMProcessing(slope_path, 
+                   output_dem, 
                    "slope", 
                    computeEdges=True)
-'''
-##compute slope mean for each parcel
-slope = gdal.Open(slope_path)
-'''
+output_slope = None
+
 ###compute slope_mean using rasterstats
 start = time.time()
 slope_st = zonal_stats(vectors = parcels['geometry'],
@@ -201,23 +195,26 @@ slope_st = zonal_stats(vectors = parcels['geometry'],
 end = time.time()
 print(end-start)
 
-parcels['slope_mean'] = gpd.GeoDataFrame(slope_st)['mean'].astype(int)
+parcels['slope_mean'] = gpd.GeoDataFrame(slope_st)['mean']#.astype(int)
+parcels['slope_mean'] = parcels['slope_mean'].fillna(0).astype(int)
+
 
 #building's properties (bdnb)
 
 #bdnb = gpd.read_file('BDNB_BAUTV.gpkg' ,layer='batiment_groupe_compile')
 bdnb = gpd.read_file('BDNB_BAUTV.gpkg' ,layer='batiment_autres_styles_disponible_sur_clic_droit')
 #cut Bdnb to ROI
-bdnb_cut = z31_functions.intersect_using_spatial_index(bdnb, ROI)
+bdnb_cut = z31_functions.intersect_using_spatial_index(bdnb, new_roi)
 #sjoin
 df_overlay = bdnb_cut.overlay(parcels, how='intersection')
 #regroupement du result par parcelle geom plus area(sum)
 dfjoin = df_overlay.dissolve('IDU',aggfunc={'ffo_bat_annee_construction': 'min','dpe_class_conso_ener_mean' :'first'})#other aggfunc = first
 dfjoin = dfjoin.reset_index()
 #merge result selection on IDU
-parcels = parcels.merge(dfjoin[['IDU','ffo_bat_annee_construction','dpe_class_conso_ener_mean']], on='IDU')
-parcels = parcels.reset_index()
+parcels = parcels.merge(dfjoin[['IDU','ffo_bat_annee_construction','dpe_class_conso_ener_mean']],how='left', on='IDU')
+#parcels = parcels.reset_index()
 
+parcels['dpe_class_conso_ener_mean'] = parcels['dpe_class_conso_ener_mean'].fillna('N')
 #transform class conso in Int
 parcels['class_conso_int_mean'] = parcels['dpe_class_conso_ener_mean'].apply(lambda row : ord(row.lower())-96 if row != None and row != '' else row)
 
@@ -233,10 +230,12 @@ parcels = z31_functions.sjoin_1n_maj(parcels, oso, 'Classe')
 parcels.rename(columns = {'Classe': 'Classe_oso'}, inplace=True)
 
 parcels = z31_functions.sjoin_1n_maj(parcels, cizi, 'rf_type')
-parcels['cizi_zone'] = parcels['rf_type'].astype(int)
+parcels['cizi_zone'] = parcels['rf_type'].fillna('05').astype(int)
+
+parcels = parcels.drop(columns=['index','level_0','fid'])
 
 
-
+parcels.to_file('parcels_rich.gpkg')
 
 
 
