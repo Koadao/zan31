@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <!-- declare empty favicon (firefox issue)-->
+    <link rel="icon" href="data:,">
+
+<html>
+    <head>
+        <!-- geoltoobox -->
+        <script src="https://cdn.jsdelivr.net/npm/geotoolbox" charset="utf-8"></script>
+
+        <!-- leaflet set up -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+
+        
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+
+        <!-- embededd css-->
+        <style>
+            body {
+                padding: 0;
+                margin: 0;
+            }
+            html, body, #map {
+                height: 100%;
+                width: 100%;
+            }
+        </style>
+       
+        <title>Potentiel mutable à vocation d'habitat</title>
+        
+    </head>
+    <body>
+
+        <div id="map"></div>
+
+        <!-- embedded javascript -->
+        <script>
+            var area_filter = 700
+
+            const map = L.map('map').setView([43.6013, 1.4447], 11);//Haute-Garonne
+
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            var data = fetch("data/parc_amc1.geojson")
+                .then(function(response) {
+                    return response.json();
+                });
+
+            L.geoJSON(data).addTo(map)
+
+            
+
+            
+            //var parcels_filtered = geo.filter(parcels_unfiltered, (d) => d.area > area_filter)
+
+            //L.geoJSON(data).addTo(map);
+            
+            
+
+        </script>
+    </body>
+</html>
