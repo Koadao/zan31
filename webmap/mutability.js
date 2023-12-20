@@ -107,6 +107,7 @@ $.when(data_response).done(function() {
     const map = L.map('map', {
         center:[43.6013, 1.4447],//Toulouse
         zoom:14,
+        zoomControl: false
         //layers:[osm]
     });
 
@@ -133,70 +134,69 @@ $.when(data_response).done(function() {
         onEachFeature: onEachFeature
     }).addTo(map);
 
+    //Center on L.geoJSON feature
     map.fitBounds(parcels_f.getBounds());
 
     console.log("Parcels loaded", data_response.responseJSON);
 
-    //var parcels_filt_response = geotoolbox.filter(data_response.responseJSON, (d) => d.area > area_filter);
-    //console.log("Area filter applied", parcels_filt_response);
 
-    //var parcels_filt = L.geoJSON(parcels_filt_response);
-
+    //Add Logo 
+    L.LogoControl = L.Control.extend({
+        options: {
+            position: 'topleft'
+            //control position - allowed: 'topleft', 'topright', 'bottomleft', 'bottomright'
+        },
+    
+        onAdd: function (map) {
+            var container = L.DomUtil.create('div','logodiv');
+            var button = L.DomUtil.create('a', '', container);
+                button.innerHTML = '<img width="20%" class="logo-control-img" src="fav.svg">';
+            L.DomEvent.disableClickPropagation(button);
+            container.title = "Zéro Artificialisation Haute Garonne";
+    
+            return container;
+        },
+    });
+    new L.LogoControl().addTo(map)
+    //Add Layer Controle
+    //Set Title of layer control
     var baseMaps = {
         'OpenStreetMap': osm,
         'Satellite': Esri_WorldImagery
     };
-
     var overlayMaps = {
         'Parcelles': parcels_f, 
         //'Parcelles filtrées selon la surface': parcels_filt
     };
-
     L.control.layers(baseMaps, overlayMaps, ({ position: 'topleft' })).addTo(map);
+    //Add Zoom Controle 
+    L.control.zoom({}).addTo(map)
 
-    //legend
+    //Add Color Legend
     var legend = L.control({position: 'bottomright'});
 
-        legend.onAdd = function (map) {
+    legend.onAdd = function (map) {
 
-        var div = L.DomUtil.create('div', 'info legend'),
-            grades = EqualInt,
-            labels = [];
+    var div = L.DomUtil.create('div', 'info legend'),
+        grades = EqualInt,
+        labels = [];
 
-        // loop through our density intervals and generate a label with a colored square for each interval
-        for (var i = 0; i < grades.length; i++) {
-            div.innerHTML +=
-                '<i style="background:' + getColorarray(grades[i] + 0.0001,EqualInt) + '"></i> ' + // so that d is not == EqualInt to respect function
-                (Math.floor(grades[i ]*100)/100) + ((Math.floor(grades[i + 1]*100)/100) ? ' &ndash; ' + (Math.floor(grades[i + 1]*100)/100) + '<br>' : ' et +');
-        }
+    // loop through our density intervals and generate a label with a colored square for each interval
+    for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+            '<i style="background:' + getColorarray(grades[i] + 0.0001,EqualInt) + '"></i> ' + // so that d is not == EqualInt to respect function
+            (Math.floor(grades[i ]*100)/100) + ((Math.floor(grades[i + 1]*100)/100) ? ' &ndash; ' + (Math.floor(grades[i + 1]*100)/100) + '<br>' : ' et +');
+    }
 
-        return div;
+    return div;
     };
-
-    console.log("Legend loaded", legend);
-
     legend.addTo(map);
 
-    //scale
+    //Scale
     L.control.scale().addTo(map);
 
-    //interactions
-    var info = L.control();
 
-    info.onAdd = function (map) {
-        this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
-        this.update();
-        return this._div;
-    };
-
-    info.update = function (parcels_f) {// method that we will use to update the control based on feature properties passed
-        this._div.innerHTML = '<h4>Propriétés de la parcelle</h4>' +  (parcels_f ?
-            '<b>' + (Math.round(parcels_f.i_multi_crit*1000)/1000) + '</b><br />' + parcels_f.area + ' area m<sup>2</sup>'
-            : 'Survoler une parcelle');
-    };
-
-    info.addTo(map);
-
+    //Title
     L.Control.textbox = L.Control.extend({
 		onAdd: function(map) {
 			
@@ -212,7 +212,6 @@ $.when(data_response).done(function() {
 	});
 	L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
 	L.control.textbox({ position: 'bottomleft' }).addTo(map);
-
 
     //control class extension to hold mutability interactive area
     let interface_mu_cl =  L.Control.extend({  
@@ -230,7 +229,7 @@ $.when(data_response).done(function() {
             //area 
             let divMin = L.DomUtil.create('div', '', div);
             let labelMin = L.DomUtil.create('label', '', divMin);
-            labelMin.innerHTML = "Area min : ";
+            labelMin.innerHTML = "Area min m<sup>2</sup> &nbsp; &nbsp; &nbsp; &nbsp;: ";
             let inputMin = L.DomUtil.create('input', 'input-number', divMin);
             inputMin.type = "number";
             inputMin.value = 500;
@@ -242,21 +241,34 @@ $.when(data_response).done(function() {
             let inputgeom = L.DomUtil.create('input', 'input-number', divgeom);
             inputgeom.type = "number";
             inputgeom.value = 0.0;
+
+            //Checkbox
+            let divType = L.DomUtil.create('div', '', div);
+            divType.innerHTML = "Type de parcelle : ";
             
+            let divTypedivide = L.DomUtil.create('div', '', divType);
+            let labeldivide = L.DomUtil.create('label', '', divTypedivide);
+            labeldivide.innerHTML = "Sans Divisible";
+            let inputdivide = L.DomUtil.create('input', '', divTypedivide);
+            inputdivide.type = "checkbox";
+            inputdivide.checked = true;
+
             //filter button
             var buttonFilter = L.DomUtil.create('button', '', div);
             buttonFilter.innerHTML = "Filtrer";
 
-            L.DomEvent.on(buttonFilter, 'click', function() { this.filter(parseInt(inputMin.value), parseFloat(inputgeom.value)); }, this);
+            L.DomEvent.on(buttonFilter, 'click', function() { this.filter(parseInt(inputMin.value), parseFloat(inputgeom.value),inputdivide.checked); }, this);
 
             return div;
         },
 
-        filter( minarea, mingeom) {
+        filter( minarea, mingeom, inputChecked) {
             //Retrait des layers de la carte (données issues du GEOJSON)
-            console.log('minarea',minarea,'mingeom',mingeom)
+            
             map.removeLayer(parcels_f);
+
             //Rechargement des données du GEOJSON
+            console.log('minarea',minarea,'mingeom',mingeom)
             parcels_f = L.geoJSON(data_response.responseJSON,
             {
                 style: style,
@@ -270,6 +282,9 @@ $.when(data_response).done(function() {
 
                        return false;
                     }
+                    if(feature.properties.divisible == "1" && inputChecked) {
+                        return false;
+                       }
                         
                     return true;
                 }
@@ -282,5 +297,26 @@ $.when(data_response).done(function() {
 
     //add instance variable to map corresponding to mutability interactive area
     let interface_mu = new interface_mu_cl().addTo(map);
+
+        //interactions Info panel on hover
+        var info = L.control();
+
+        info.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+            this.update();
+            return this._div;
+        };
+    
+        info.update = function (parcels_f) {// method that we will use to update the control based on feature properties passed
+            this._div.innerHTML = '<h4>Propriétés de la parcelle</h4>' +  (parcels_f ?
+                '<b>' + (Math.round(parcels_f.i_multi_crit*1000)/1000) + '</b><br />' + parcels_f.area + 'm<sup>2</sup>'
+                : 'Survoler une parcelle');
+        };
+    
+        info.addTo(map);
+
+
+
+
 });            
 
