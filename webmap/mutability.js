@@ -47,6 +47,7 @@ var data_response = $.ajax({//warning : data crs must be EPSG:4326
     }
 })
 
+
 //specify that this code should run once the parcels data request is complete
 $.when(data_response).done(function() {
 
@@ -55,7 +56,7 @@ $.when(data_response).done(function() {
     console.log("i_multi_crit", values);
     
     //Apply equal fonction
-    let EqualInt = calculateEqualIntervals(values, 7)
+    let EqualInt = calculateEqualIntervals(values, 6)//starting at 0 so 7 values
     console.log("EqualIntervals", EqualInt);
 
     function style(feature) // param EqualInt ?
@@ -134,12 +135,12 @@ $.when(data_response).done(function() {
 
     map.fitBounds(parcels_f.getBounds());
 
-    console.log("Parcels loaded", parcels.responseJSON);
+    console.log("Parcels loaded", data_response.responseJSON);
 
-    var parcels_filt_response = geotoolbox.filter(parcels.responseJSON, (d) => d.area > area_filter);
-    console.log("Area filter applied", parcels_filt_response);
+    //var parcels_filt_response = geotoolbox.filter(data_response.responseJSON, (d) => d.area > area_filter);
+    //console.log("Area filter applied", parcels_filt_response);
 
-    var parcels_fil = L.geoJSON(parcels_filt_response).addTo(map);
+    //var parcels_filt = L.geoJSON(parcels_filt_response);
 
     var baseMaps = {
         'OpenStreetMap': osm,
@@ -147,10 +148,11 @@ $.when(data_response).done(function() {
     };
 
     var overlayMaps = {
-        'Parcels': parcels_f
+        'Parcelles': parcels_f, 
+        //'Parcelles filtrées selon la surface': parcels_filt
     };
 
-    L.control.layers(baseMaps, overlayMaps).addTo(map);
+    L.control.layers(baseMaps, overlayMaps, ({ position: 'topleft' })).addTo(map);
 
     //legend
     var legend = L.control({position: 'bottomright'});
@@ -195,6 +197,79 @@ $.when(data_response).done(function() {
 
     info.addTo(map);
 
-    //var parcels_filt = geo.filter(parcels_f, (d) => d.area > area_filter);
+    L.Control.textbox = L.Control.extend({
+		onAdd: function(map) {
+			
+		var text = L.DomUtil.create('div', 'info');
+		text.id = "inf_title";
+		text.innerHTML = "<strong>Potentiel mutable à vocation d'habitat</strong>"
+		return text;
+		},
+
+		onRemove: function(map) {
+			// Nothing to do here
+		}
+	});
+	L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+	L.control.textbox({ position: 'bottomleft' }).addTo(map);
+
+
+    //control class extension to hold mutability interactive area
+    let interface_mu_cl =  L.Control.extend({  
+  
+        options: {
+            position: 'topright'
+        },
+        
+        onAdd: function(map) {
+            //container
+            this.map = map;
+            var div = L.DomUtil.create('div', 'info');
+            div.innerHTML = '<h4>Filtrage</h4>';
+            
+            //area 
+            let divMin = L.DomUtil.create('div', '', div);
+            let labelMin = L.DomUtil.create('label', '', divMin);
+            labelMin.innerHTML = "Area min : ";
+            let inputMin = L.DomUtil.create('input', 'input-number', divMin);
+            inputMin.type = "number";
+            inputMin.value = 0;
+            
+            //filter button
+            var buttonFilter = L.DomUtil.create('button', '', div);
+            buttonFilter.innerHTML = "Filtrer";
+
+            L.DomEvent.on(buttonFilter, 'click', function() { this.filter(parseInt(inputMin.value)); }, this);
+
+            return div;
+        },
+
+        filter(minarea) {
+            //Retrait des layers de la carte (données issues du GEOJSON)
+            map.removeLayer(parcels_f);
+            
+            //Rechargement des données du GEOJSON
+            layers = L.geoJSON(data_response.responseJSON,
+            {
+
+                filter: function (feature) {
+                    //area filter
+                    if (minarea) 
+                    {
+                       if(feature.properties.area < minarea)
+                       return false;
+                    }
+        
+                    return true;
+                }
+            }).addTo(map);
+        },
+      
+        onRemove: function(map) {
+        }
+      });
+
+    //add instance variable to map corresponding to mutability interactive area
+    let interface_mu = new interface_mu_cl().addTo(map);
 });            
 
