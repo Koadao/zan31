@@ -39,7 +39,7 @@ function calculateEqualIntervals(values, numClasses)
 
 //GeoJSON response
 var data_response = $.ajax({//warning : data crs must be EPSG:4326
-    url:"data/parc_amc3.geojson",
+    url:"parc_amc3.geojson",
     dataType: "json",
     success: console.log("Parcels successfully found!"),
     error: function (xhr) {
@@ -233,33 +233,44 @@ $.when(data_response).done(function() {
             labelMin.innerHTML = "Area min : ";
             let inputMin = L.DomUtil.create('input', 'input-number', divMin);
             inputMin.type = "number";
-            inputMin.value = 0;
+            inputMin.value = 500;
+
+            //Indice geom
+            let divgeom = L.DomUtil.create('div', '', div);
+            let labelgeom = L.DomUtil.create('label', '', divgeom);
+            labelgeom.innerHTML = "Indice Geom min : ";
+            let inputgeom = L.DomUtil.create('input', 'input-number', divgeom);
+            inputgeom.type = "number";
+            inputgeom.value = 0.0;
             
             //filter button
             var buttonFilter = L.DomUtil.create('button', '', div);
             buttonFilter.innerHTML = "Filtrer";
 
-            L.DomEvent.on(buttonFilter, 'click', function() { this.filter(parseInt(inputMin.value)); }, this);
+            L.DomEvent.on(buttonFilter, 'click', function() { this.filter(parseInt(inputMin.value), parseFloat(inputgeom.value)); }, this);
 
             return div;
         },
 
-        filter(minarea) {
+        filter( minarea, mingeom) {
             //Retrait des layers de la carte (données issues du GEOJSON)
+            console.log('minarea',minarea,'mingeom',mingeom)
             map.removeLayer(parcels_f);
-            
             //Rechargement des données du GEOJSON
-            layers = L.geoJSON(data_response.responseJSON,
+            parcels_f = L.geoJSON(data_response.responseJSON,
             {
+                style: style,
+                onEachFeature: onEachFeature,
 
                 filter: function (feature) {
                     //area filter
-                    if (minarea) 
+                    if ( minarea || mingeom) 
                     {
-                       if(feature.properties.area < minarea)
+                       if( feature.properties.area < minarea || feature.properties.geom_index < (mingeom))
+
                        return false;
                     }
-        
+                        
                     return true;
                 }
             }).addTo(map);
