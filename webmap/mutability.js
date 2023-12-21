@@ -127,17 +127,71 @@ $.when(data_response).done(function() {
     osm.addTo(map)
 
     //layers
-    var area_filter = 3000;
-    
+
+
+    //Base parcel Layer
     var parcels_f = L.geoJSON(data_response.responseJSON,{
         style: style,
         onEachFeature: onEachFeature
     }).addTo(map);
 
+    //Empty parcels Layer(filter)
+    var parcels_nu = L.geoJSON(data_response.responseJSON,{
+        style: function(feature) {
+            // Define your custom style properties based on the feature's properties
+            return {
+                fillColor: 'green',  // Example fill color
+                weight: 1,
+                opacity: 1,
+                //dashArray: '6',
+                color: 'white',
+                fillOpacity: 0.5
+            }},
+
+        filter: function (feature) {
+            //Building filter
+            
+            {
+               if(!( feature.properties.urb_inten_pourcent == '0' ))
+
+               return false;
+            }
+            return true;
+        }
+    })//.addTo(map);
+
+
+    //Divisible parcels Layer(filter)
+    var parcels_divisible = L.geoJSON(data_response.responseJSON,{
+        style: function(feature) {
+            // Define your custom style properties based on the feature's properties
+            return {
+                fillColor: 'white',  // Example fill color
+                weight: 0.7,
+                opacity: 1,
+                //dashArray: '4',
+                color: 'brown',
+                fillOpacity: 0.7
+            }},
+
+        filter: function (feature) {
+            //Building filter
+            
+            {
+                if(!( feature.properties.divisible == '1') || feature.properties.urb_inten_pourcent == '0')
+
+                return false;
+            }
+            return true;
+        }
+    })//.addTo(map);
+    
+    console.log("Parcels nu", parcels_nu)//Print parcel_nu
+    console.log("Parcels loaded", data_response.responseJSON);
+
     //Center on L.geoJSON feature
     map.fitBounds(parcels_f.getBounds());
 
-    console.log("Parcels loaded", data_response.responseJSON);
 
 
     //Add Logo 
@@ -166,6 +220,8 @@ $.when(data_response).done(function() {
     };
     var overlayMaps = {
         'Parcelles': parcels_f, 
+        'Parcelles nues' : parcels_nu,
+        'Parcelles Divisibles': parcels_divisible
         //'Parcelles filtrées selon la surface': parcels_filt
     };
     L.control.layers(baseMaps, overlayMaps, ({ position: 'topleft' })).addTo(map);
@@ -190,7 +246,27 @@ $.when(data_response).done(function() {
 
     return div;
     };
-    legend.addTo(map);
+
+    legend.addTo(map); 
+    
+    //legend simple layer
+
+    //     //Add Color Legend
+    //     var legend = L.control({position: 'bottomright'});
+
+    //     legend.onAdd = function (map) {
+    
+    //     var div = L.DomUtil.create('div', 'info legend'),
+
+    
+    //     // loop through our density intervals and generate a label with a colored square for each interval
+        
+    //     div.innerHTML = ('<i style="background:'  + '"></i> ' + 'label');
+        
+    
+    //     return div;
+    //     };
+    //     legend.addTo(map);
 
     //Scale
     L.control.scale().addTo(map);
@@ -298,7 +374,7 @@ $.when(data_response).done(function() {
     //add instance variable to map corresponding to mutability interactive area
     let interface_mu = new interface_mu_cl().addTo(map);
 
-        //interactions Info panel on hover
+        //interactions Info panel on hover (au survol)
         var info = L.control();
 
         info.onAdd = function (map) {
@@ -309,7 +385,12 @@ $.when(data_response).done(function() {
     
         info.update = function (parcels_f) {// method that we will use to update the control based on feature properties passed
             this._div.innerHTML = '<h4>Propriétés de la parcelle</h4>' +  (parcels_f ?
-                '<b>' + (Math.round(parcels_f.i_multi_crit*1000)/1000) + '</b><br />' + parcels_f.area + 'm<sup>2</sup>'
+                '<b>' + (Math.round(parcels_f.i_multi_crit*1000)/1000) + '</b><br />' 
+                +'<b>'+ parcels_f.area + '</b> m<sup>2</sup>'+ '<br />'
+                +'<b>'+ (Math.round(parcels_f.geom_index*100)/100)+'</b>'  + ' de Géométrie'+ '<br />'
+                + '<b>'+ Math.round(parcels_f.urb_inten_pourcent) +'</b>'+ '% : Intensité urbaine' + '<br />'
+                + '<b>'+ parcels_f.ffo_bat_annee_construction  +'</b>'+ ': Plus ancien batiment' + '<br />' 
+                + '<b>'+ parcels_f.slope_mean +'</b>'+ '°'+' : Pente moyenne'
                 : 'Survoler une parcelle');
         };
     
