@@ -46,13 +46,23 @@ var data_response = $.ajax({//warning : data crs must be EPSG:4326
         alert(xhr.statusText)
     }
 })
+//GeoJSON response
+var data_response_2 = $.ajax({//warning : data crs must be EPSG:4326
+    url:"parc_residu.geojson",
+    dataType: "json",
+    success: console.log("Residu parcels successfully found!"),
+    error: function (xhr) {
+        alert(xhr.statusText)
+    }
+})
 
 
 //specify that this code should run once the parcels data request is complete
 $.when(data_response).done(function() {
 
     //breaks choroplethe
-    let values = data_response.responseJSON.features.map(feature => feature.properties['i_multi_crit']);
+    let json_filt = geotoolbox.filter(data_response.responseJSON, (d) => d.urb_inten_pourcent > 0);
+    let values = json_filt.features.map(feature => feature.properties['i_multi_crit']);
     console.log("i_multi_crit", values);
     
     //Apply equal fonction
@@ -130,9 +140,9 @@ $.when(data_response).done(function() {
 
 
     //Base parcel Layer
-    var parcels_f = L.geoJSON(data_response.responseJSON,{
+    var parcels_f = L.geoJSON(json_filt,{
         style: style,
-        onEachFeature: onEachFeature
+        onEachFeature: onEachFeature,
     }).addTo(map);
 
     //Empty parcels Layer(filter)
@@ -162,7 +172,7 @@ $.when(data_response).done(function() {
 
 
     //Divisible parcels Layer(filter)
-    var parcels_divisible = L.geoJSON(data_response.responseJSON,{
+    var parcels_divisible = L.geoJSON(data_response_2.responseJSON,{
         style: function(feature) {
             // Define your custom style properties based on the feature's properties
             return {
@@ -178,14 +188,38 @@ $.when(data_response).done(function() {
             //Building filter
             
             {
-                if(!( feature.properties.divisible == '1') || feature.properties.urb_inten_pourcent == '0')
+                if( feature.properties.urb_inten_ == '0')
+
+                return false;
+                if( feature.properties.area_div < '1000')
 
                 return false;
             }
             return true;
-        }
+
+            
+        },
+        onEachFeature: function (feature, layer)
+        {layer.bindPopup("<b>"+ feature.properties.area_div + "m<sup>2</sup></b>").openPopup()
+        layer.on({
+            mouseover: function highlightFeature(e) {
+                var layer = e.target;
+                layer.setStyle({
+                    weight: 3,
+                    color: '#666',
+                    fillOpacity: 0.8,
+                    opacity: 0.7
+                })
+            },
+            mouseout: function resetHighlight(e) {
+                parcels_divisible.resetStyle(e.target);
+                info.update();
+            },
+        }) }
+
     })//.addTo(map);
-    
+
+
     console.log("Parcels nu", parcels_nu)//Print parcel_nu
     console.log("Parcels loaded", data_response.responseJSON);
 
@@ -228,6 +262,19 @@ $.when(data_response).done(function() {
     //Add Zoom Controle 
     L.control.zoom({}).addTo(map)
 
+    //legend simple layer
+
+    //Add Color Legend
+    var legend_simple = L.control({position: 'bottomright'});
+
+    legend_simple.onAdd = function (map) {
+
+        let divlegend = L.DomUtil.create('divlegend', 'info legend');
+        divlegend.innerHTML = (' <i style="background: #77b86a; border: 1px solid #000;"> </i> Parcelles Nues <br> <br /><i style="background: #fafaf2; border: 1px solid #000;"> </i>Parcelles Divisibles');
+        return divlegend;
+        };
+    legend_simple.addTo(map);
+
     //Add Color Legend
     var legend = L.control({position: 'bottomright'});
 
@@ -236,7 +283,7 @@ $.when(data_response).done(function() {
     var div = L.DomUtil.create('div', 'info legend'),
         grades = EqualInt,
         labels = [];
-
+        div.innerHTML = '<h4>Indicateur parcelles</h4>'
     // loop through our density intervals and generate a label with a colored square for each interval
     for (var i = 0; i < grades.length; i++) {
         div.innerHTML +=
@@ -249,24 +296,6 @@ $.when(data_response).done(function() {
 
     legend.addTo(map); 
     
-    //legend simple layer
-
-    //     //Add Color Legend
-    //     var legend = L.control({position: 'bottomright'});
-
-    //     legend.onAdd = function (map) {
-    
-    //     var div = L.DomUtil.create('div', 'info legend'),
-
-    
-    //     // loop through our density intervals and generate a label with a colored square for each interval
-        
-    //     div.innerHTML = ('<i style="background:'  + '"></i> ' + 'label');
-        
-    
-    //     return div;
-    //     };
-    //     legend.addTo(map);
 
     //Scale
     L.control.scale().addTo(map);
@@ -345,7 +374,7 @@ $.when(data_response).done(function() {
 
             //Rechargement des données du GEOJSON
             console.log('minarea',minarea,'mingeom',mingeom)
-            parcels_f = L.geoJSON(data_response.responseJSON,
+            parcels_f = L.geoJSON(json_filt,
             {
                 style: style,
                 onEachFeature: onEachFeature,
@@ -361,6 +390,10 @@ $.when(data_response).done(function() {
                     if(feature.properties.divisible == "1" && inputChecked) {
                         return false;
                        }
+    
+                        if( feature.properties.urb_inten_pourcent == '0')
+            
+                        return false;
                         
                     return true;
                 }
@@ -391,7 +424,7 @@ $.when(data_response).done(function() {
                 + '<b>'+ Math.round(parcels_f.urb_inten_pourcent) +'</b>'+ '% : Intensité urbaine' + '<br />'
                 + '<b>'+ parcels_f.ffo_bat_annee_construction  +'</b>'+ ': Plus ancien batiment' + '<br />' 
                 + '<b>'+ parcels_f.slope_mean +'</b>'+ '°'+' : Pente moyenne'
-                : 'Survoler une parcelle');
+                : 'Survoler une parcelle')
         };
     
         info.addTo(map);

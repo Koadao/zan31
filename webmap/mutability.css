@@ -5,6 +5,68 @@ body {
     padding: 0;
     margin: 0;
 }
+
+#accueil {
+    height: 0;
+    padding-top: 46.3%;
+    width: 100%;
+    background-image: url(fond_acceuil.png);
+    background-size: contain;
+    background-repeat: no-repeat;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ubuntu, "Helvetica Neue", sans-serif;
+    color: #444444;
+    position: relative;
+}
+
+.info-box {
+    display: none;
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.top-left-box{    
+    width: 40%; /* Adjust the width as needed */
+    height: 25%; /* Adjust the height as needed */
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.1); /* Slightly transparent white */
+    cursor: pointer;
+    margin-left: 5%;
+}
+
+.bottom-right-box {
+    width: 25%; /* Adjust the width as needed */
+    height: 30%; /* Adjust the height as needed */
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.1); /* Slightly transparent white */
+    cursor: pointer;
+    margin-right: 2%;
+    margin-bottom: 5%;
+}
+
+ .top-right-box, .bottom-left-box, .bottom-right-box {
+    width: 25%; /* Adjust the width as needed */
+    height: 25%; /* Adjust the height as needed */
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.1); /* Slightly transparent white */
+    cursor: pointer;
+}
+
+.top-left-box { top: 0; left: 0; }
+.top-right-box { top: 0; right: 0; }
+.bottom-left-box { bottom: 0; left: 0; }
+.bottom-right-box { bottom: 0; right: 0; }
+
+.top-left-box:hover .info-box,
+.top-right-box:hover .info-box,
+.bottom-left-box:hover .info-box,
+.bottom-right-box:hover .info-box {
+    display: block;
+}
+
+
 html, body, #map {
     height: 100%;
     width: 100%;
