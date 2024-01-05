@@ -17,6 +17,9 @@
     </head>
     <body>
         <div id="accueil">
+            <a href="#map" class="title">
+            <div id="title"> &#8681; Switch to map &#8681;
+            </div> </a>
             <div class="top-left-box">
                 <div class="info-box"> <h2>Logo</h2> 
                 <h2>Layer Control</h2> 
@@ -32,18 +35,67 @@
             </div>
             </div>
             <div class="top-right-box">
-                <div class="info-box">Top Right Box Content</div>
+                <div class="info-box"> <h3>Possibilité de filtrer les Parcelles à l'écran en fonction :</h3>
+                - De la surface minimum en mètre carré
+                <br> - D'un indicateur de géométrie 
+                (de 0 à 1, proches de 1 on retrouve les carrés et les rectangles tandis que les formes les plus tortueuses ont un indice proche de 0)
+                <br> - De la capacité de la parcelle à être sudiviser en un plus grand nombre de parcelles
+                </div>
             </div>
             <div class="bottom-left-box">
-                <div class="info-box">Bottom Left Box Content</div>
+                <div class="info-box"> <h3>Réalisation : Master Sigma 2023</h3>  
+                 Martin Joffrion - Mélanie Echevarria - Tom Mervant
+                </div>
             </div>
             <div class="bottom-right-box">
                 <div class="info-box"> 
                     <h2>Indice Multicritère</h2>
-                    Note  synthétique combinant les informations de multiples base de données
-                    <br>De 0 à 1 
+                    <p>Note  synthétique combinant les informations de multiple base de données.
+                    Allant de 0 à 1, dans cette configuration il met en avant les parcelles en fonction de pondérations suivantes : 
+                    </p>
+                    <div id="tableau">
+                    <table>
+                        <tr>
+                            <th>Criteria</th>
+                            <th>Weight</th>
+                        </tr>
+                        <tr>
+                            <td>Distances</td>
+                            <td>.15</td>
+                        </tr>
+                        <tr>
+                            <td>Area</td>
+                            <td>.2</td>
+                        </tr>
+                        <tr>
+                            <td>Urban Intensity</td>
+                            <td>.1</td>
+                        </tr>
+                        <tr>
+                            <td>Year of Construction</td>
+                            <td>.05</td>
+                        </tr>
+                        <tr>
+                            <td>Cizi</td>
+                            <td>.05</td>
+                        </tr>
+                        <tr>
+                            <td>Energie Class</td>
+                            <td>.05</td>
+                        </tr>
+                        <tr>
+                            <td>Geometry Indice</td>
+                            <td>.15</td>
+                        </tr>
+                        <tr>
+                            <td>Mean Slope</td>
+                            <td>.05</td>
+                        </tr>
+                    </table>
+                </div>
                 </div>
             </div>
+            
         </div>
         
         <div id="map"></div>
