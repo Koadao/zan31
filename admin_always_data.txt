@@ -7,7 +7,7 @@ mdp_connection always data : ZANdpt31
 
 Nom utilisateur : ZANdpt31
 
-Identidfiant accés distant : zandpt31
+Identifiant accés distant : zandpt31
 Mdp accés distant: ZANHauteGaronne31
 
 URL du site : https://zandpt31.alwaysdata.net/mutability.html
