@@ -7,10 +7,12 @@ Created on Thu Nov  2 11:01:47 2023
 Objet : Création d'une tâche urbaine simple ou jointe aux géométries parcellaires
 
 Données d'entrée : 
-    *IGN BD TOPO (couche bâtiment à l'échelle départementale)
-    *IGN BD PARCELLAIRE (si jointure aux géométries parcellaires envisagée)
+    *bati_topo = IGN BD TOPO (couche bâtiment à l'échelle départementale)
+    *parcelle = IGN BD PARCELLAIRE (si jointure aux géométries parcellaires envisagée)
+    *ROI = epci_auterivain.geojson (délimitation zone d'étude Admin EXPRESS IGN)
     
-TU : (Tâche Urbaine)
+Output : 
+    *TU_bd_topo.gpkg = TU (Tâche Urbaine)
 
 
 # installation des librairies rtree et GeoPandas

@@ -1,9 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Dec 11 17:13:38 2023
+Created on Thu Nov  2 11:01:47 2023
 
-@author: dsii
+@authors: M.Joffrion, M.Echevarria, T.Mervant
+
+Objet : compute multiple-criteria analysis based on the parc_enhanced.py output
+
+Input : parcels_rich.gpkg (parc_enhanced output)
+    
+Output : i_multi_crit.csv (csv file containing IDU and final multiple-criteria )
+
 """
+
 import geopandas as gpd
 import pandas as pd
 import os
@@ -82,11 +90,11 @@ dict_w = {list_col_normalise[i]: list_poids[i] for i in range(len(list_col_norma
 #définir les poids
 
 #Calcul de la Somme pondérée
-indice_parcelle['i_mutli_crit'] = 0
+indice_parcelle['i_multi_crit'] = 0
 for i in range(len(list_col_normalise)):
-    indice_parcelle['i_mutli_crit'] = indice_parcelle['i_mutli_crit'] + indice_parcelle[list_col_normalise[i]]* dict_w[list_col_normalise[i]]
+    indice_parcelle['i_multi_crit'] = indice_parcelle['i_multi_crit'] + indice_parcelle[list_col_normalise[i]]* dict_w[list_col_normalise[i]]
     
 #write in csv
-indice_parcelle[['IDU','i_mutli_crit']].to_csv('i_mutli_crit.csv')
+indice_parcelle[['IDU','i_multi_crit']].to_csv('i_multi_crit.csv')
 
 

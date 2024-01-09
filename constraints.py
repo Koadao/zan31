@@ -1,4 +1,30 @@
-#preprocess constraints for parc_enhanced
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Nov  2 11:01:47 2023
+
+@authors: M.Joffrion, M.Echevarria, T.Mervant
+
+Objet : preprocess constraints for parc_enhanced.py
+
+Données d'entrée :
+    *area_of_interest = IGN BD TOPO ( couche ZONE_D_ACTIVITE_OU_D_INTERET )
+    *cemeteries = IGN BD TOPO ( couche ZONE_D_ACTIVITE_OU_D_INTERET )
+    *fields = IGN BD TOPO ( couche ZONE_D_ACTIVITE_OU_D_INTERET )
+    *roads = IGN BD TOPO ( couche troncon_de_route )
+    *train = IGN BD TOPO ( couche TRONCON_DE_VOIE_FERREE )
+    *ppri = PPRI DDT31
+    *cizi = CIZI DREAL Occitanie / UT2J
+    
+Output : 
+    *constraints.shp
+    
+# librairies utilisées
+
+geopandas 
+pandas
+numpy
+
+"""
 
 #lib
 import sys
@@ -16,7 +42,7 @@ import time
 
 #load data
 ##data_path
-data_path = 'C:/Users/Xenerios/Desktop/zan_31/V2/constraints'
+data_path = 'C:/.../constraints'
 crs = 2154
 
 ##bd topo
@@ -172,5 +198,5 @@ single_poly
                          #crs=crs)#geodataframe
 
 single_poly.to_file(
-    'C:/Users/Xenerios/Desktop/zan_31/V2/data_/constraints.shp'
+    'C:/.../constraints.shp'
 )

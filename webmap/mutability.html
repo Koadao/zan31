@@ -24,13 +24,13 @@
                 <div class="info-box"> <h2>Logo</h2> 
                 <h2>Layer Control</h2> 
                 <h3>Parcelles de la Tache Urbaine (TU)</h3>
-                - Parcelles en dégradé de couleurs (divisible ou non) 
+                - Parcelles en dégradé de couleurs (divisibles ou non) 
                 <br>
-                - Pacelles Nues (sans batiment)
+                - Pacelles Nues (sans bâtiments)
                 <br>
-                - Pacelles Divisible : Superficie supérieure à 1 000 m2
-                <br> aprés application d'une zone tapon de 20m 
-                <br> sur l'enveloppe convex des batiments de la parcelle initiale
+                - Pacelles Divisibles : Superficie supérieure à 1 000 m2
+                <br> après application d'une zone tampon de 20m 
+                <br> sur l'enveloppe convexe des bâtiments de la parcelle initiale
                 <br> <h2>Zoom</h2>  
             </div>
             </div>
@@ -38,8 +38,8 @@
                 <div class="info-box"> <h3>Possibilité de filtrer les Parcelles à l'écran en fonction :</h3>
                 - De la surface minimum en mètre carré
                 <br> - D'un indicateur de géométrie 
-                (de 0 à 1, proches de 1 on retrouve les carrés et les rectangles tandis que les formes les plus tortueuses ont un indice proche de 0)
-                <br> - De la capacité de la parcelle à être sudiviser en un plus grand nombre de parcelles
+                (indice synthétique exprimé de 0 à 1, où 1 caractérise le maximum de complexité géométrique)
+                <br> - De la capacité de la parcelle à être subdivisée en un plus grand nombre de parcelles
                 </div>
             </div>
             <div class="bottom-left-box">
@@ -50,8 +50,9 @@
             <div class="bottom-right-box">
                 <div class="info-box"> 
                     <h2>Indice Multicritère</h2>
-                    <p>Note  synthétique combinant les informations de multiple base de données.
-                    Allant de 0 à 1, dans cette configuration il met en avant les parcelles en fonction de pondérations suivantes : 
+                    <p>Valeur unique attribuée à une parcelle donnée, évaluant le degré de mutabilité selon un ensemble de critères choisis.
+                    Exprimé de 0 à 1, où 1 correspond aux parcelles au plus haut degré de mutabilité,
+                    <br> l'indice tient ici compte de la pondération des critères suivante: 
                     </p>
                     <div id="tableau">
                     <table>

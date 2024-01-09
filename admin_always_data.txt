@@ -3,11 +3,11 @@ Compte : zandpt31
 
 Adresse mail temporaire : 6jjyednzh7@tippabble.com
 
-mdp_connection : ZANdpt31
+mdp_connection always data : ZANdpt31
 
 Nom utilisateur : ZANdpt31
 
-Id accés distant : zandpt31
+Identidfiant accés distant : zandpt31
 Mdp accés distant: ZANHauteGaronne31
 
 URL du site : https://zandpt31.alwaysdata.net/mutability.html

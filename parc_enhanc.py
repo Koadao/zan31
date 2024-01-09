@@ -1,5 +1,43 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Nov  2 11:01:47 2023
+
+@authors: M.Joffrion, M.Echevarria, T.Mervant
+
+Objet : enhancement of a dataset of parcels to compute a mutability index
+
+Données d'entrée : 
+    *contraint = constraints.shp (output of contraints.py)
+    *TU_topo = TU_bd_topo.gpkg layer tu_brute (output of tache_urbaine.py)
+    *parcels = IGN BD PARCELLAIRE (si jointure aux géométries parcellaires envisagée)
+    *ROI = epci_auterivain.geojson (délimitation zone d'étude Admin EXPRESS IGN)
+    *bati_topo = IGN BD TOPO (couche bâtiment à l'échelle départementale)
+    *bus = arrets-du-reseau-lio.geojson LIO  Occitanie
+    *gdf_equip_topo = IGN BD TOPO ( couche equipement_de_transport ) 
+    *roads = IGN BD TOPO ( couche troncon_de_route )
+    *dem = MNT_BAUTV.tif (DEM from IGN RGE ALTI 5m)
+    *bdnb = BDNB_BAUTV.gpkg (extract of BDNP layer batiment_groupe_compile)
+    *oso = OSO_BAUTV.shp (extract from OSO land use data)
+    *cizi = CIZI_BAUTV.shp (extract from CIZI occitanie)
+    
+Output : 
+    *residut_parcels.shp (espace disponible sur les parcelles divisibles) 
+    *parcels_rich.gpkg (jeu de données enrichies)
+
+
+# librairies utilisées
+
+geopandas 
+pandas
+numpy
+osgeo/gdal
+rasterstats
+scipy
+
+"""
+
 #obj
-#enhancement of a dataset of parcels to compute a mutability index
+
 
 #lib
 import sys
@@ -22,28 +60,15 @@ from scipy.spatial import cKDTree
 import matplotlib.pyplot as plt
 
 import z31_functions
-'''
-sys.path.append('C:/Users/Xenerios/Desktop/zan_31/V2/z31_f')
 
-
-#load plain parcels data
-##data_path
-data_path = 'C:/Users/Xenerios/Desktop/zan_31/V2/data_sampled'
-
-filename = []
-for data in glob.glob(os.path.join(
-    data_path, '*.geojson')):
-
-    filename.append(data)
-filename
-'''
-os.chdir('C:/Users/dsii/Documents/zan_31_atelier/data_test')
+os.chdir('C:/Users/dsii/Documents/zan_31_atelier/data_test') #Working directory
 
 parcels = gpd.read_file('parcelle.geojson')
+
 #only retrieve urban parcels (FILTER)
 #open TU
 
-TU_topo = gpd.read_file('TU_topo.gpkg')
+TU_topo = gpd.read_file("TU_bd_topo.gpkg",layer='tu_brute', driver="GPKG")
 parcels = parcels.sjoin(TU_topo, how="left", predicate='intersects')
 
 parcels = parcels[parcels['type_zone']=='U']
@@ -59,11 +84,13 @@ ROI = gpd.read_file('epci_auterivain.geojson')
 roi = ROI.envelope
 contraint = contraint.clip(roi)
 
-start = time.time()
+start = time.time()#timer
 parcels = parcels[parcels.disjoint(contraint.unary_union)]
 end = time.time()
 print(end-start)
 
+
+#retrieve parcels according to size and geometry index (FILTER)
 ###################
 aire_minimum = 500# m2
 ###################
@@ -76,10 +103,13 @@ parcels = parcels[parcels['area']>aire_minimum]
 parcels = z31_functions.geom_index(parcels) 
 
 #compute IDU
-#parcels['IDU'] = parcels['CODE_DEP']+parcels['CODE_COM']+parcels['SECTION']+parcels['NUMERO']#create unique ID
-new_roi =  parcels.dissolve()
-#retrieve parcels according to size and geometry index (FILTER)
+parcels['IDU'] = parcels['CODE_DEP']+parcels['CODE_COM']+parcels['SECTION']+parcels['NUMERO']#create unique ID
 
+#create a reduce ROI
+new_roi =  parcels.dissolve()
+
+
+#timer
 start = time.time()
 
 bati_topo = gpd.read_file('bd_topo.gpkg' ,layer='batiment')
@@ -96,6 +126,7 @@ parcels_div.to_file('residut_parcels.shp')
 
 #distance - accessibility
 ##load and preprocess data
+
 parcels_cent = parcels.centroid#returns geoseries
 
 parcels_cent = pd.concat([parcels.reset_index(drop = True), 
@@ -158,8 +189,6 @@ parcels = parcels.merge(parcels_cent[['dist_TRAIN',#change to DIST afterwards
                                       'dist_ROADS', 
                                       'IDU']], on = 'IDU')
 
-#####################################################################
-###################################################### fin bug ######
 
 #slope data
 dem = gdal.Open( 'MNT_BAUTV.tif')
@@ -203,8 +232,9 @@ parcels['slope_mean'] = parcels['slope_mean'].fillna(0).astype(int)
 
 #building's properties (bdnb)
 
-#bdnb = gpd.read_file('BDNB_BAUTV.gpkg' ,layer='batiment_groupe_compile')
-bdnb = gpd.read_file('BDNB_BAUTV.gpkg' ,layer='batiment_autres_styles_disponible_sur_clic_droit')
+bdnb = gpd.read_file('BDNB_BAUTV.gpkg' ,layer='batiment_groupe_compile')
+#bdnb = gpd.read_file('BDNB_BAUTV.gpkg' ,layer='batiment_autres_styles_disponible_sur_clic_droit')
+
 #cut Bdnb to ROI
 bdnb_cut = z31_functions.intersect_using_spatial_index(bdnb, new_roi)
 #sjoin
@@ -224,8 +254,8 @@ parcels['class_conso_int_mean'] = parcels['dpe_class_conso_ener_mean'].apply(lam
 #environmental second class risks and land use
 oso = gpd.read_file('OSO_BAUTV.shp')
 cizi = gpd.read_file('CIZI_BAUTV_03_04.shp')
-#filtre cizi si '01','02'
 
+#filtre cizi si '01','02'
 cizi = cizi[cizi['rf_type']!= ('01'and '02')]
 
 parcels = z31_functions.sjoin_1n_maj(parcels, oso, 'Classe')
@@ -236,7 +266,7 @@ parcels['cizi_zone'] = parcels['rf_type'].fillna('05').astype(int)
 
 parcels = parcels.drop(columns=['index','level_0','fid'])
 
-
+#write final file 
 parcels.to_file('parcels_rich.gpkg')
 
 

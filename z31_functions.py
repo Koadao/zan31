@@ -1,4 +1,13 @@
-#functions script prior to parc_enhanced
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Nov  2 11:01:47 2023
+
+@authors: M.Joffrion, M.Echevarria, T.Mervant
+
+Objet : functions script prior to parc_enhanced
+
+"""
+
 import geopandas as gpd 
 import pandas as pd
 import numpy as np
