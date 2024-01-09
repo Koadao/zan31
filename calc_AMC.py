@@ -78,14 +78,14 @@ indice_parcelle, list_col_normalise = norma_sum(indice_parcelle, 'sum_critere',l
 
 #create dict of weights
 list_poids = [0]*11 #poids vides
-dict_w = {list_col_normalise[i]: list_poids[i] for i in range(len(list_col_normalise))}  
+dict_w = {list_col_normalise[i]: list_poids[i] for i in range(len(list_col_normalise))}
+#définir les poids
 
 #Calcul de la Somme pondérée
 indice_parcelle['i_mutli_crit'] = 0
 for i in range(len(list_col_normalise)):
     indice_parcelle['i_mutli_crit'] = indice_parcelle['i_mutli_crit'] + indice_parcelle[list_col_normalise[i]]* dict_w[list_col_normalise[i]]
     
-
 #write in csv
 indice_parcelle[['IDU','i_mutli_crit']].to_csv('i_mutli_crit.csv')
 

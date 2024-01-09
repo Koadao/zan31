@@ -92,6 +92,8 @@ print(end-start)
 
 parcels , parcels_div = z31_functions.urban_intensity(parcels , bati, 'IDU',500)
 
+parcels_div.to_file('residut_parcels.shp')
+
 #distance - accessibility
 ##load and preprocess data
 parcels_cent = parcels.centroid#returns geoseries
