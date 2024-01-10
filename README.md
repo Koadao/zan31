@@ -1,6 +1,9 @@
 # zan31
-# atelier géomatique SIGMA 2023 - 2024
-Contexte thématique
+
+# Atelier géomatique SIGMA 2023 - 2024
+# Auteurs : JOFFRION Martin ECHEVARRIA Mélanie MERVANT Tom
+
+# Contexte thématique
 
 Dans un contexte d’aménagement de plus en plus contraint par l’effort de protection des milieux naturels dans les politiques publiques, les aménageurs cherchent à identifier de manière optimale le potentiel d’espaces disponibles pour d’éventuels projets d’urbanisme.
 Depuis la loi "Climat et résilience" du 22 août 2021, l’objectif de zéro artificialisation nette (ZAN) d’ici 2050 a été posé et renforce les contraintes. L’objectif ZAN s’inscrit dans ce paradigme et oblige à une division par deux du rythme de l’artificialisation des sols (produit de l’urbanisation) tous les 10 ans à compter de 2021 jusqu’en 2050, année à partir de laquelle toute artificialisation devra être compensée par “renaturation” d’une surface équivalente (qui justifierait le qualificatif d’artificialisation nette nulle).
