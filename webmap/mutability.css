@@ -1,9 +1,43 @@
 /*Z31 SCC*/
-
+/* Header styles */
+header { 
+    text-align: right;
+	position: fixed;
+    width: 98%;
+    font-size: 6vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ubuntu, "Helvetica Neue", sans-serif;
+    font-weight: 700 ;
+    color: #dfdfdf;
+    padding:1% ;
+    /* padding-left: 220px; */
+    background-color: #317b46;
+    overflow: hidden;
+}
+header img {
+    position: absolute;
+    left: 10px; /* Adjust the left position to align the favicon */
+    top: 50%;
+    transform: translateY(-50%);
+    height: 50px; /* Adjust the height of the favicon */
+    width: auto ;
+    margin-right: 10px; /* Add some spacing between the favicon and text */
+}
 /*base*/
 body {
     padding: 0;
     margin: 0;
+}
+
+#intro{
+    height: 95%;
+    background-image: url(intro_img.jpg);
+    background-size:cover;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ubuntu, "Helvetica Neue", sans-serif;
+    color: #dfdfdf;
+    text-align: center;
+    font-size: 4vh;
+    /* font-weight: bold; */
+    padding: 5% 5% 0 5%;
 }
 
 #accueil {
